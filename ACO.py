@@ -1,54 +1,33 @@
-import math
-import random
+import math, random
 
-# 1. Define the Problem: Create a set of cities with their coordinates[cite: 3]
+# 1. Define Problem & 2. Initialize Parameters[cite: 3]
 cities = [(0, 0), (2, 8), (5, 2), (8, 6), (9, 1)]
 n = len(cities)
-dist = [[math.dist(c1, c2) for c2 in cities] for c1 in cities]
+D = [[math.dist(i, j) for j in cities] for i in cities]
+P = [[1.0] * n for _ in range(n)]
+best_t, best_l = None, float('inf')
 
-# 2. Initialize Parameters: Set ants, alpha, beta, rho, and initial pheromone[cite: 3]
-num_ants = 10
-alpha, beta, rho, init_phero = 1.0, 2.0, 0.5, 1.0
-pheromones = [[init_phero] * n for _ in range(n)]
-best_tour, best_len = None, float('inf')
-
-# 5. Iterate: Repeat construction and updating process[cite: 3]
+# 5. Iterate[cite: 3]
 for _ in range(50):
-    all_tours = []
-    
-    # 3. Construct Solutions: Choose next city probabilistically[cite: 3]
-    for _ in range(num_ants):
-        tour = [random.randint(0, n - 1)]
-        while len(tour) < n:
-            curr = tour[-1]
-            probs = [(nxt, (pheromones[curr][nxt]**alpha) * ((1.0 / dist[curr][nxt])**beta)) 
-                     for nxt in range(n) if nxt not in tour]
-            
-            tot = sum(p for _, p in probs)
-            r = random.uniform(0, tot)
-            for nxt, p in probs:
-                r -= p
-                if r <= 0:
-                    tour.append(nxt)
-                    break
+    tours = []
+    # 3. Construct Solutions[cite: 3]
+    for _ in range(10):
+        t = [random.randint(0, n - 1)]
+        while len(t) < n:
+            opts = [i for i in range(n) if i not in t]
+            w = [P[t[-1]][nxt] * (1.0 / D[t[-1]][nxt])**2 for nxt in opts]
+            t.append(random.choices(opts, weights=w)[0])
         
-        # Calculate tour length (returning to origin)
-        tour_len = sum(dist[tour[i]][tour[i-1]] for i in range(n))
-        all_tours.append((tour, tour_len))
-        
-        if tour_len < best_len:
-            best_len, best_tour = tour_len, tour
+        l = sum(D[t[i]][t[i-1]] for i in range(n))
+        tours.append((t, l))
+        if l < best_l: best_l, best_t = l, t
             
-    # 4. Update Pheromones: Based on evaporation and solution quality[cite: 3]
-    for i in range(n):
-        for j in range(n):
-            pheromones[i][j] *= (1 - rho) 
-            
-    for tour, tour_len in all_tours:
+    # 4. Update Pheromones[cite: 3]
+    P = [[P[i][j] * 0.5 for j in range(n)] for i in range(n)] 
+    for t, l in tours:
         for i in range(n):
-            pheromones[tour[i]][tour[i-1]] += 1.0 / tour_len
-            pheromones[tour[i-1]][tour[i]] += 1.0 / tour_len 
+            P[t[i]][t[i-1]] += 1.0 / l
+            P[t[i-1]][t[i]] += 1.0 / l
 
-# 6. Output the Best Solution: Track and output best solution[cite: 3]
-print(f"Best tour sequence: {best_tour}")
-print(f"Shortest route length: {best_len:.4f}")
+# 6. Output Best Solution[cite: 3]
+print(f"Best tour: {best_t}\nLength: {best_l:.4f}")
